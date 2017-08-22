@@ -9,6 +9,8 @@ pub enum Expression {
     StringLiteral(Rc<String>),
     Identifier(Rc<String>),
     BoolLiteral(bool),
+    Call(Rc<Expression>, Rc<Vec<Expression>>),
+    Definition(Option<Type>, Rc<String>, Option<Rc<Expression>>),
     EOF,
     Operation {
         left:  Rc<Expression>,
@@ -20,6 +22,32 @@ pub enum Expression {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Rc<Expression>),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Type {
+    Str, Num, Bool, Any, Nil, Undefined,
+}
+
+impl Type {
+    pub fn compare(&self, other: &Type) -> bool {
+        if self == &Type::Any || other == &Type::Any {
+            true
+        } else {
+            self == other
+        }
+    }
+}
+
+pub fn get_type(v: &str) -> Option<Type> {
+    match v {
+        "str"  => Some(Type::Str),
+        "num"  => Some(Type::Num),
+        "bool" => Some(Type::Bool),
+        "any"  => Some(Type::Any),
+        "nil"  => Some(Type::Nil),
+        _      => None,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

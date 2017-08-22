@@ -63,6 +63,69 @@ impl Parser {
             TokenType::FloatLiteral  => Ok(Expression::NumberLiteral(self.traveler.current_content().parse::<f64>().unwrap())),
             TokenType::BoolLiteral   => Ok(Expression::BoolLiteral(self.traveler.current_content() == "true")),
             TokenType::StringLiteral => Ok(Expression::StringLiteral(Rc::new(self.traveler.current_content().clone()))),
+            TokenType::Identifier    => {                
+                let id = Expression::Identifier(Rc::new(self.traveler.current_content()));
+                let name = Rc::new(self.traveler.current_content());
+
+                self.traveler.next();
+
+                match self.traveler.current().token_type {
+                    TokenType::IntLiteral |
+                    TokenType::FloatLiteral |
+                    TokenType::BoolLiteral |
+                    TokenType::StringLiteral |
+                    TokenType::Identifier |
+                    TokenType::Symbol => {
+                        if self.traveler.current().token_type == TokenType::Symbol {
+                            match self.traveler.current_content().as_str() {
+                                "(" | ")" => (),
+                                "!"       => return Ok(Expression::Call(Rc::new(id), Rc::new(vec!()))),
+                                "="       => {
+                                    self.traveler.next();
+                                    let expr = self.expression()?;
+                                    
+                                    self.traveler.next();
+
+                                    return Ok(Expression::Definition(None, name, Some(Rc::new(expr))))
+                                },
+
+                                _   => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
+                            }
+                        }
+
+                        let call = self.call(id)?;
+
+                        self.traveler.next();
+
+                        return Ok(call)
+                    },
+                    
+                    TokenType::Type => {
+                        let t = get_type(&self.traveler.current_content());
+                        
+                        self.traveler.next();
+                        
+                        match self.traveler.current_content().as_str() {
+                            "=" => {
+                                self.traveler.next();
+                                let expr = self.expression()?;
+                                
+                                self.traveler.next();
+
+                                return Ok(Expression::Definition(t, name, Some(Rc::new(expr))))
+                            },
+                            
+                            _ => return Ok(Expression::Definition(t, name, None)),
+                        }
+                    },
+
+                    _ => (),
+                }
+
+                self.traveler.prev();
+
+                Ok(id)
+            },
             _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {:#?}", self.traveler.current()))),
         }
     }
@@ -75,6 +138,21 @@ impl Parser {
             },
             _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("expected block, found: {}", self.traveler.current_content()))),
         }
+    }
+    
+    fn call(&mut self, caller: Expression) -> ParserResult<Expression> {
+        let mut args = Vec::new();
+
+        while self.traveler.current_content() != ")" && self.traveler.current_content() != "\n" {
+            args.push(try!(self.expression()));
+            self.traveler.next();
+
+            if self.traveler.current_content() == "," {
+                self.traveler.next();
+            }
+        }
+
+        Ok(Expression::Call(Rc::new(caller), Rc::new(args)))
     }
     
     fn expression(&mut self) -> ParserResult<Expression> {
@@ -91,7 +169,7 @@ impl Parser {
                 return self.operation(expr)
             }
             
-            self.traveler.next();
+            self.traveler.prev();
         }
 
         Ok(expr)

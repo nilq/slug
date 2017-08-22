@@ -6,9 +6,11 @@ use syntax::parser::{Traveler, Parser};
 
 fn main() {
     let test = r#"
-a num = 10
+a = 10
+b = 10
+c = 10
     "#;
-    
+
     let mut blocks = BlockTree::new(test, 0);
     let indents    = blocks.indents();
 
@@ -24,6 +26,4 @@ a num = 10
             println!("{:#?}", stuff)
         },
     }
-    
-    println!("#{:#?}", done);
 }

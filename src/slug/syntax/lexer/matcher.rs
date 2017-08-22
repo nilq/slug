@@ -250,10 +250,14 @@ impl Matcher for KeyMatcher {
                 return None
             }
             if dat.collect::<String>() == constant {
-                let current = *tokenizer.peek_n(constant.len()).unwrap();
-
-                if "_@?'".contains(current) || current.is_alphanumeric() {
-                    return None
+                match tokenizer.peek_n(constant.len()) {
+                    Some(c) => {
+                        if "_@?'".contains(*c) || c.is_alphanumeric() {
+                            return None
+                        }
+                    },
+                    
+                    None => (),
                 }
 
                 tokenizer.advance(constant.len());
