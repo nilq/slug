@@ -1,4 +1,4 @@
-<img src="http://nilq.dk/slug.png" width="64px" height="64px" align="right">
+<img src="http://nilq.dk/slug.png" width="4%" height="4%" align="right">
 
 ## slug
 
