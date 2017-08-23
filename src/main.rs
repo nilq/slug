@@ -6,8 +6,11 @@ use syntax::parser::{Traveler, Parser};
 
 fn main() {
     let test = r#"
-a = 10
-b = 10
+a num = 10 - 10
+
+b num = 10
+b [1 + 2] num = 1
+
 c = 10
     "#;
 

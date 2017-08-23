@@ -46,6 +46,7 @@ impl Parser {
     }
     
     pub fn term(&mut self) -> ParserResult<Expression> {
+        self.skip_whitespace()?;
         match self.traveler.current().token_type {
             TokenType::EOL => {
                 self.traveler.next();
@@ -66,9 +67,23 @@ impl Parser {
             TokenType::Identifier    => {                
                 let id = Expression::Identifier(Rc::new(self.traveler.current_content()));
                 let name = Rc::new(self.traveler.current_content());
-
+                
                 self.traveler.next();
 
+                if let Some(t) = self.types()? {                    
+                    match self.traveler.current_content().as_str() {
+                        "=" => {
+                            self.traveler.next();
+                            let expr = self.expression()?;
+                            self.traveler.next();
+
+                            return Ok(Expression::Definition(Some(t), name, Some(Rc::new(expr))))
+                        },
+                        
+                        _ => return Ok(Expression::Definition(Some(t), name, None)),
+                    }
+                }
+                
                 match self.traveler.current().token_type {
                     TokenType::IntLiteral |
                     TokenType::FloatLiteral |
@@ -99,27 +114,8 @@ impl Parser {
 
                         return Ok(call)
                     },
-                    
-                    TokenType::Type => {
-                        let t = get_type(&self.traveler.current_content());
-                        
-                        self.traveler.next();
-                        
-                        match self.traveler.current_content().as_str() {
-                            "=" => {
-                                self.traveler.next();
-                                let expr = self.expression()?;
-                                
-                                self.traveler.next();
 
-                                return Ok(Expression::Definition(t, name, Some(Rc::new(expr))))
-                            },
-                            
-                            _ => return Ok(Expression::Definition(t, name, None)),
-                        }
-                    },
-
-                    _ => (),
+                    _ => ()
                 }
 
                 self.traveler.prev();
@@ -139,7 +135,7 @@ impl Parser {
             _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("expected block, found: {}", self.traveler.current_content()))),
         }
     }
-    
+
     fn call(&mut self, caller: Expression) -> ParserResult<Expression> {
         let mut args = Vec::new();
 
@@ -155,6 +151,49 @@ impl Parser {
         Ok(Expression::Call(Rc::new(caller), Rc::new(args)))
     }
     
+    fn types(&mut self) -> ParserResult<Option<Type>> {
+        match self.traveler.current().token_type {
+            TokenType::Type   => {
+                let t = Ok(Some(get_type(&self.traveler.current_content()).unwrap()));
+                self.traveler.next();
+                t
+            },
+            TokenType::Symbol => match self.traveler.current_content().as_str() {
+                "[" => {
+                    self.traveler.next(); // a
+
+                    let mut len = None;
+                    
+                    if self.traveler.current_content() != "]" {
+                        len = Some(Rc::new(self.expression()?));
+                        self.traveler.next();
+                    }
+                    
+                    self.traveler.expect_content("]")?;
+                    self.traveler.next(); // b
+                    
+                    if self.traveler.current().token_type == TokenType::Type {
+                        let t = Type::Array(len, Rc::new(get_type(&self.traveler.current_content()).unwrap()));
+                        self.traveler.next();
+                        
+                        Ok(Some(t))
+                    } else {
+                        self.traveler.prev(); // b
+                        self.traveler.prev(); // a
+                        Ok(None)
+                    }
+                },
+                "=" => Ok(None),
+                _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
+            },
+            TokenType::Identifier => {
+                println!("here: {}", self.traveler.current_content());
+                Ok(None)
+            },
+            _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
+        }
+    }
+
     fn expression(&mut self) -> ParserResult<Expression> {
         if self.traveler.current_content() == "\n" {
             self.traveler.next();

@@ -1,7 +1,5 @@
 use std::rc::Rc;
 
-use super::{ParserResult, ParserError};
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Block(Rc<Vec<Statement>>),
@@ -26,7 +24,7 @@ pub enum Statement {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
-    Str, Num, Bool, Any, Nil, Undefined,
+    Str, Num, Bool, Any, Nil, Array(Option<Rc<Expression>>, Rc<Type>),
 }
 
 impl Type {
