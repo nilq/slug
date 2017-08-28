@@ -15,9 +15,10 @@ fun hm (a, b): 10
 fun ay num: 0
 fun c: 0
 
-c dic = [
-  fun: 1,
-  fun (a num): a + 3,
+c [3] any = [
+    fun: 1
+    fun (a num):
+        a + 3
 ]
     "#;
 

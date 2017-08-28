@@ -330,6 +330,7 @@ impl Parser {
                         if self.traveler.current_content() == "," {
                             self.traveler.next();
                         }
+
                         self.skip_whitespace()?;
                     }
                                         
@@ -344,12 +345,12 @@ impl Parser {
     }
     
     fn block(&mut self) -> ParserResult<Vec<Statement>> {
-        match self.traveler.current().token_type {
+        match self.traveler.current().token_type.clone() {
             TokenType::Block(ref v) => {
                 let mut p = Parser::new(Traveler::new(v.clone()));
                 Ok(try!(p.parse()))
             },
-            _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("expected block, found: {}", self.traveler.current_content()))),
+            _ => Ok(vec![Statement::Expression(Rc::new(self.expression()?))]),
         }
     }
 
@@ -389,11 +390,11 @@ impl Parser {
                     
                     self.traveler.expect_content("]")?;
                     self.traveler.next(); // b
-                    
+
                     if self.traveler.current().token_type == TokenType::Type {
                         let t = Type::Array(len, Rc::new(get_type(&self.traveler.current_content()).unwrap()));
                         self.traveler.next();
-                        
+
                         Ok(Some(t))
                     } else {
                         self.traveler.prev(); // b
