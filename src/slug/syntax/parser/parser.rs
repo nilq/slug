@@ -95,7 +95,7 @@ impl Parser {
                                 } else {
                                     body = Rc::new(vec![Statement::Expression(Rc::new(self.expression()?))])
                                 }
-                                
+
                                 Ok(Some(Statement::Fun {
                                     name,
                                     param_names: Rc::new(param_names),
@@ -106,10 +106,9 @@ impl Parser {
                             },
                             
                             _ => {
-                                self.traveler.next();
-                                
+
                                 let mut t = None;
-                                
+
                                 if self.traveler.current().token_type == TokenType::Type {
                                     t = get_type(&self.traveler.current_content());
                                     self.traveler.next();
@@ -117,9 +116,9 @@ impl Parser {
 
                                 self.traveler.expect_content(":")?;
                                 self.traveler.next();
-                                
+
                                 let body;
-                                
+
                                 if self.traveler.current_content() == "\n" {
                                     self.traveler.next();
                                     

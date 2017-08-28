@@ -13,6 +13,7 @@ fun add (a num) num: a + 10
 fun idk (a num): 1
 fun hm (a): 10
 fun ay num: 0
+fun c: 0
     "#;
 
     let mut blocks = BlockTree::new(test, 0);
