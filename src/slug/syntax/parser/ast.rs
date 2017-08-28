@@ -20,6 +20,13 @@ pub enum Expression {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Rc<Expression>),
+    Fun {
+        name:        Rc<String>,
+        param_names: Rc<Vec<String>>,
+        param_types: Rc<Vec<Type>>,
+        t:           Option<Type>,
+        body:        Rc<Vec<Statement>>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
