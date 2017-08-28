@@ -27,6 +27,7 @@ pub enum Type {
     Str, Num, Bool, Any, Nil, Array(Option<Rc<Expression>>, Rc<Type>),
 }
 
+#[allow(unused)]
 impl Type {
     pub fn compare(&self, other: &Type) -> bool {
         if self == &Type::Any || other == &Type::Any {

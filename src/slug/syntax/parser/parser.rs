@@ -58,13 +58,13 @@ impl Parser {
             },
             _ => (),
         }
-        
+
         match self.traveler.current().token_type {
             TokenType::IntLiteral    => Ok(Expression::NumberLiteral(self.traveler.current_content().parse::<f64>().unwrap())),
             TokenType::FloatLiteral  => Ok(Expression::NumberLiteral(self.traveler.current_content().parse::<f64>().unwrap())),
             TokenType::BoolLiteral   => Ok(Expression::BoolLiteral(self.traveler.current_content() == "true")),
             TokenType::StringLiteral => Ok(Expression::StringLiteral(Rc::new(self.traveler.current_content().clone()))),
-            TokenType::Identifier    => {                
+            TokenType::Identifier    => {
                 let id = Expression::Identifier(Rc::new(self.traveler.current_content()));
                 let name = Rc::new(self.traveler.current_content());
                 
@@ -79,7 +79,7 @@ impl Parser {
 
                             return Ok(Expression::Definition(Some(t), name, Some(Rc::new(expr))))
                         },
-                        
+
                         _ => return Ok(Expression::Definition(Some(t), name, None)),
                     }
                 }
@@ -93,26 +93,26 @@ impl Parser {
                     TokenType::Symbol => {
                         if self.traveler.current().token_type == TokenType::Symbol {
                             match self.traveler.current_content().as_str() {
-                                "(" | ")" => (),
+                                "(" | ")" | "," => (),
                                 "!"       => return Ok(Expression::Call(Rc::new(id), Rc::new(vec!()))),
                                 "="       => {
                                     self.traveler.next();
                                     let expr = self.expression()?;
-                                    
+
                                     self.traveler.next();
 
                                     return Ok(Expression::Definition(None, name, Some(Rc::new(expr))))
                                 },
-
+                                
                                 _   => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
                             }
+                        } else {
+                            let call = self.call(id)?;
+
+                            self.traveler.next();
+
+                            return Ok(call)
                         }
-
-                        let call = self.call(id)?;
-
-                        self.traveler.next();
-
-                        return Ok(call)
                     },
 
                     _ => ()
@@ -121,6 +121,13 @@ impl Parser {
                 self.traveler.prev();
 
                 Ok(id)
+            },
+            TokenType::Symbol => match self.traveler.current_content().as_str() {
+                "," | ")" => { // bad hack here
+                    self.traveler.next();
+                    return self.term()
+                },
+                _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected symbol: {}", self.traveler.current_content()))),
             },
             _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {:#?}", self.traveler.current()))),
         }
@@ -140,7 +147,10 @@ impl Parser {
         let mut args = Vec::new();
 
         while self.traveler.current_content() != ")" && self.traveler.current_content() != "\n" {
+            println!("what: {}", self.traveler.current_content());
+
             args.push(try!(self.expression()));
+            println!("skipping: {}", self.traveler.current_content());
             self.traveler.next();
 
             if self.traveler.current_content() == "," {
@@ -163,7 +173,7 @@ impl Parser {
                     self.traveler.next(); // a
 
                     let mut len = None;
-                    
+
                     if self.traveler.current_content() != "]" {
                         len = Some(Rc::new(self.expression()?));
                         self.traveler.next();
@@ -183,14 +193,9 @@ impl Parser {
                         Ok(None)
                     }
                 },
-                "=" => Ok(None),
-                _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
+                _ => Ok(None),
             },
-            TokenType::Identifier => {
-                println!("here: {}", self.traveler.current_content());
-                Ok(None)
-            },
-            _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
+            _ => Ok(None),
         }
     }
 

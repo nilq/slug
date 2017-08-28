@@ -6,12 +6,10 @@ use syntax::parser::{Traveler, Parser};
 
 fn main() {
     let test = r#"
-a num = 10 - 10
+a num = 10
+b num = 10 + a
 
-b num = 10
-b [1 + 2] num = 1
-
-c = 10
+add a, b
     "#;
 
     let mut blocks = BlockTree::new(test, 0);
