@@ -1,4 +1,7 @@
+<img src="http://nilq.dk/slug.png" width="12%" height="12%" align="right">
+
 ## slug
+
 it's kinda python, but optionally typed and transpiled to lua
 
 ### concept
