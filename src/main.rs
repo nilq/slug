@@ -11,9 +11,12 @@ b num = 10 + a
 
 fun add (a num) num: a + 10
 fun idk (a num): 1
-fun hm (a): 10
+fun hm (a, b): 10
 fun ay num: 0
 fun c: 0
+
+add = fun (a num):
+    a + 1
     "#;
 
     let mut blocks = BlockTree::new(test, 0);

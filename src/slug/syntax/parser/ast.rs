@@ -14,7 +14,13 @@ pub enum Expression {
         left:  Rc<Expression>,
         op:    Operand,
         right: Rc<Expression>,
-    }
+    },
+    Fun {
+        param_names: Rc<Vec<String>>,
+        param_types: Rc<Vec<Type>>,
+        t:           Option<Type>,
+        body:        Rc<Vec<Statement>>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]

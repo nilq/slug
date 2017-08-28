@@ -226,6 +226,97 @@ impl Parser {
 
                 Ok(id)
             },
+            TokenType::Keyword => match self.traveler.current_content().as_str() {
+                "fun" => {
+                    self.traveler.next();
+                    
+                    match self.traveler.current_content().as_str() {
+                        "(" => {
+                            self.traveler.next();
+
+                            let mut param_names = Vec::new();
+                            let mut param_types = Vec::new();
+                            
+                            while self.traveler.current_content() != ")" {
+                                param_names.push(self.traveler.expect(TokenType::Identifier)?);
+                                self.traveler.next();
+
+                                if self.traveler.current().token_type == TokenType::Type {
+                                    param_types.push(get_type(&self.traveler.expect(TokenType::Type)?).unwrap());
+                                    self.traveler.next();
+                                } else {
+                                    param_types.push(Type::Any);
+                                }
+
+                                if self.traveler.current_content() == "," {
+                                    self.traveler.next();
+                                }
+                            }
+                            
+                            self.traveler.next();
+                            
+                            let mut t = None;
+                            
+                            if self.traveler.current().token_type == TokenType::Type {
+                                t = get_type(&self.traveler.current_content());
+                                self.traveler.next();
+                            }
+
+                            self.traveler.expect_content(":")?;
+                            self.traveler.next();
+                            
+                            let body;
+                            
+                            if self.traveler.current_content() == "\n" {
+                                self.traveler.next();
+                                
+                                body = Rc::new(self.block()?);
+                            } else {
+                                body = Rc::new(vec![Statement::Expression(Rc::new(self.expression()?))])
+                            }
+
+                            Ok(Expression::Fun {
+                                param_names: Rc::new(param_names),
+                                param_types: Rc::new(param_types),
+                                t,
+                                body,
+                            })
+                        },
+                        
+                        _ => {
+
+                            let mut t = None;
+
+                            if self.traveler.current().token_type == TokenType::Type {
+                                t = get_type(&self.traveler.current_content());
+                                self.traveler.next();
+                            }
+
+                            self.traveler.expect_content(":")?;
+                            self.traveler.next();
+
+                            let body;
+
+                            if self.traveler.current_content() == "\n" {
+                                self.traveler.next();
+                                
+                                body = Rc::new(self.block()?);
+                            } else {
+                                body = Rc::new(vec![Statement::Expression(Rc::new(self.expression()?))])
+                            }
+
+                            Ok(Expression::Fun {
+                                param_names: Rc::new(Vec::new()),
+                                param_types: Rc::new(Vec::new()),
+                                t,
+                                body,
+                            })
+                        },
+                    }
+                },
+                
+                _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected symbol: {}", self.traveler.current_content()))),
+            },
             TokenType::Symbol => match self.traveler.current_content().as_str() {
                 "," | ")" => { // bad hack here
                     self.traveler.next();
