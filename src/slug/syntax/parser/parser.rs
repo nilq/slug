@@ -236,7 +236,7 @@ impl Parser {
 
                             let mut param_names = Vec::new();
                             let mut param_types = Vec::new();
-                            
+
                             while self.traveler.current_content() != ")" {
                                 param_names.push(self.traveler.expect(TokenType::Identifier)?);
                                 self.traveler.next();
@@ -284,7 +284,6 @@ impl Parser {
                         },
                         
                         _ => {
-
                             let mut t = None;
 
                             if self.traveler.current().token_type == TokenType::Type {
@@ -318,11 +317,27 @@ impl Parser {
                 _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected symbol: {}", self.traveler.current_content()))),
             },
             TokenType::Symbol => match self.traveler.current_content().as_str() {
-                "," | ")" => { // bad hack here
+                "[" => {
                     self.traveler.next();
-                    return self.term()
+                    
+                    let mut body = Vec::new();
+
+                    while self.traveler.current_content() != "]" {
+                        body.push(self.expression()?);
+
+                        self.traveler.next();
+
+                        if self.traveler.current_content() == "," {
+                            self.traveler.next();
+                        }
+                        self.skip_whitespace()?;
+                    }
+                                        
+                    self.traveler.next();
+                    
+                    Ok(Expression::DictLiteral(Rc::new(body)))
                 },
-                _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected symbol: {}", self.traveler.current_content()))),
+                _   => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected symbol: {}", self.traveler.current_content()))),
             },
             _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {:#?}", self.traveler.current()))),
         }

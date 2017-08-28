@@ -15,8 +15,10 @@ fun hm (a, b): 10
 fun ay num: 0
 fun c: 0
 
-add = fun (a num):
-    a + 1
+c dic = [
+  fun: 1,
+  fun (a num): a + 3,
+]
     "#;
 
     let mut blocks = BlockTree::new(test, 0);
