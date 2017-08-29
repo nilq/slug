@@ -25,10 +25,9 @@ b = fun: 10
 ```
 
 ```
-c [2] any = [
-  a = fun: 1
-  b = fun (a num):
-    a + 3
+b any .. = [
+  a = fun (b num) num:
+    b + 10
 ]
 ```
 

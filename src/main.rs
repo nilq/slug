@@ -17,6 +17,10 @@ b any .. = [
     a = fun (b num) num:
         b + 10
 ]
+
+d = b.a 10
+
+e = (fun num: 10)!
     "#;
 
     let mut blocks = BlockTree::new(test, 0);

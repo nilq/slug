@@ -14,6 +14,7 @@ pub enum Expression {
     BoolLiteral(bool),
     DictLiteral(Rc<Vec<Expression>>),
     Call(Rc<Expression>, Rc<Vec<Expression>>),
+    Index(Rc<Expression>, Rc<String>),
     Definition(Option<Type>, Rc<String>, Option<Rc<Expression>>),
     EOF,
     Operation {
