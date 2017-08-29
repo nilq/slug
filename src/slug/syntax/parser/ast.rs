@@ -114,7 +114,7 @@ impl Expression {
                             }
                             tt.clone()
                         },
-                        None => Type::Any,
+                        None => expr.get_type(sym, env)?,
                     };
                     
                     match sym.get_name(&name) {
@@ -166,8 +166,8 @@ impl Expression {
             },
 
             Expression::Call(ref id, ref args) => {
-                match try!(id.get_type(sym, env)) {
-                    Type::Fun(ref params) => {
+                match id.get_type(sym, env)? {
+                    Type::Fun(ref params) => {                        
                         let mut arg_types = Vec::new();
 
                         for arg in args.iter() {
@@ -188,10 +188,10 @@ impl Expression {
                                 }
                             },
                             _ => if params[1..].to_vec() != arg_types.as_slice() {
-                                Err(ParserError::new(&format!("{}: supplied very wrong args", id)))
-                            } else {
-                                Ok(())
-                            },
+                                    Err(ParserError::new(&format!("{}: supplied very wrong args", id)))
+                                } else {
+                                    Ok(())
+                                },
                         }
                     },
 

@@ -90,7 +90,7 @@ impl Parser {
                                 
                                 if self.traveler.current_content() == "\n" {
                                     self.traveler.next();
-                                    
+
                                     body = Rc::new(self.block()?);
                                 } else {
                                     body = Rc::new(vec![Statement::Expression(Rc::new(self.expression()?))])
@@ -183,7 +183,6 @@ impl Parser {
                         "=" => {
                             self.traveler.next();
                             let expr = self.expression()?;
-                            self.traveler.next();
 
                             return Ok(Expression::Definition(Some(t), name, Some(Rc::new(expr))))
                         },
@@ -206,8 +205,6 @@ impl Parser {
                                 "="       => {
                                     self.traveler.next();
                                     let expr = self.expression()?;
-
-                                    self.traveler.next();
 
                                     return Ok(Expression::Definition(None, name, Some(Rc::new(expr))))
                                 },

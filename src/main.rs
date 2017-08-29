@@ -8,7 +8,10 @@ use syntax::parser::{Traveler, Parser};
 
 fn main() {
     let test = r#"
-a = fun (b num) num: ""
+a any = fun (b num) num:
+    b + 10
+
+c = a "feature hrm"
     "#;
 
     let mut blocks = BlockTree::new(test, 0);
@@ -26,7 +29,8 @@ a = fun (b num) num: ""
     match parser.parse() {
         Err(why)  => println!("error: {}", why),
         Ok(stuff) => for s in stuff.iter() {
-            println!("{:#?}\n\n", stuff);
+            println!("{:#?}", stuff);
+
             match s.visit(&symtab, &typetab) {
                 Ok(()) => (),
                 Err(e) => {
@@ -36,4 +40,6 @@ a = fun (b num) num: ""
             }
         },
     }
+    
+    println!("{:?}\n{:?}", symtab, typetab);
 }

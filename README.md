@@ -4,7 +4,7 @@
 
 it's kinda python, but optionally typed and transpiled to lua
 
-### concept
+### currently works
 
 ```
 a num = 10
@@ -30,4 +30,15 @@ c [2] any = [
   b = fun (a num):
     a + 3
 ]
+```
+
+### also works ...
+
+skipping fun call type checking by explicitly declaring the fun as `any` ..
+
+```
+a any = fun (b num) num:
+    b + 10
+
+c = a "feature hrm"
 ```
