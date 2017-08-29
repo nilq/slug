@@ -50,7 +50,7 @@ impl Parser {
                     if self.traveler.current().token_type == TokenType::Identifier {
                         let name = Rc::new(self.traveler.current_content());
                         self.traveler.next();
-                        
+
                         match self.traveler.current_content().as_str() {
                             "(" => {
                                 self.traveler.next();
@@ -59,7 +59,7 @@ impl Parser {
                                 let mut param_types = Vec::new();
                                 
                                 while self.traveler.current_content() != ")" {
-                                    param_names.push(self.traveler.expect(TokenType::Identifier)?);
+                                    param_names.push(Rc::new(self.traveler.expect(TokenType::Identifier)?));
                                     self.traveler.next();
 
                                     if self.traveler.current().token_type == TokenType::Type {
@@ -242,7 +242,7 @@ impl Parser {
                             let mut param_types = Vec::new();
 
                             while self.traveler.current_content() != ")" {
-                                param_names.push(self.traveler.expect(TokenType::Identifier)?);
+                                param_names.push(Rc::new(self.traveler.expect(TokenType::Identifier)?));
                                 self.traveler.next();
 
                                 if self.traveler.current().token_type == TokenType::Type {

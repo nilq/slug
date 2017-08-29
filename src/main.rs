@@ -1,12 +1,14 @@
 mod slug;
 
+use std::rc::Rc;
+
 use slug::syntax;
 use syntax::lexer::{BlockTree, process_branch};
 use syntax::parser::{Traveler, Parser};
 
 fn main() {
     let test = r#"
-
+a = fun (b num) num: ""
     "#;
 
     let mut blocks = BlockTree::new(test, 0);
@@ -17,11 +19,21 @@ fn main() {
     
     let traveler = Traveler::new(done.clone());
     let mut parser = Parser::new(traveler);
+    
+    let symtab  = Rc::new(syntax::SymTab::new_global());
+    let typetab = Rc::new(syntax::TypeTab::new_global());
 
     match parser.parse() {
         Err(why)  => println!("error: {}", why),
-        Ok(stuff) => {
-            println!("{:#?}", stuff)
+        Ok(stuff) => for s in stuff.iter() {
+            println!("{:#?}\n\n", stuff);
+            match s.visit(&symtab, &typetab) {
+                Ok(()) => (),
+                Err(e) => {
+                    println!("{}", e);
+                    return
+                },
+            }
         },
     }
 }
