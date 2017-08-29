@@ -38,7 +38,7 @@ pub enum Statement {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
-    Str, Num, Bool, Any, Nil, Array(Option<Rc<Expression>>, Rc<Type>),
+    Str, Num, Bool, Any, Nil, Array(Option<Rc<Expression>>, Rc<Type>), Undefined,
 }
 
 #[allow(unused)]
