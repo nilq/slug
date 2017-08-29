@@ -106,7 +106,6 @@ impl Parser {
                             },
                             
                             _ => {
-
                                 let mut t = None;
 
                                 if self.traveler.current().token_type == TokenType::Type {
@@ -138,8 +137,13 @@ impl Parser {
                         }
 
                     } else {
-                        self.traveler.prev();
-                        Ok(None)
+                        if self.traveler.current().token_type == TokenType::Type {
+                            self.traveler.prev();
+                            Ok(Some(Statement::Expression(Rc::new(self.expression()?))))
+                        } else {
+                            self.traveler.prev();
+                            Ok(None)
+                        }
                     }
                 },
                 _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),

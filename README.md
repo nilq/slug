@@ -7,8 +7,24 @@ it's kinda python, but optionally typed and transpiled to lua
 ### concept
 
 ```
-add num(a num, b num):
-  a + b
+a num = 10
+b num = 10 + a
+```
 
-a num = add 10, 10
+```
+fun add (a num, b num) num:
+  a + b
+  
+fun idk (a num): 1
+fun hm (a, b): 10
+fun ay num: 0
+fun c: 0
+```
+
+```
+c [2] any = [
+  a = fun: 1
+  b = fun (a num):
+    a + 3
+]
 ```
