@@ -8,10 +8,15 @@ use syntax::parser::{Traveler, Parser};
 
 fn main() {
     let test = r#"
-a any = fun (b num) num:
+a = fun (b num) num:
     b + 10
 
-c = a "feature hrm"
+c = a 10
+
+b any .. = [
+    a = fun (b num) num:
+        b + 10
+]
     "#;
 
     let mut blocks = BlockTree::new(test, 0);

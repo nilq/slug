@@ -53,7 +53,15 @@ impl Expression {
                     },
                 }
             },
-            
+
+            Expression::DictLiteral(ref content) => {
+                if let Some(t) = content.get(0) {
+                    Ok(Type::Array(Rc::new(t.get_type(&sym, &env)?)))
+                } else {
+                    Ok(Type::Array(Rc::new(Type::Nil)))
+                }
+            },
+
             Expression::Fun { ref t, ref param_names, ref param_types, ref body, } => {
                 let mut tp = Vec::new();
                 
@@ -91,11 +99,22 @@ impl Expression {
                 None => Err(ParserError::new(&format!("use of undeclared: {}", id))),
             },
             
-            Expression::DictLiteral(ref body) => {
+            Expression::DictLiteral(ref content) => {
                 let local_sym = Rc::new(SymTab::new(sym.clone(), &Vec::new()));
                 let local_env = Rc::new(TypeTab::new(env.clone(), &Vec::new()));
 
-                for s in body.iter() {
+                let mut tp = Type::Any;
+
+                if let Some(t) = content.get(0) {
+                    tp = t.clone().get_type(&sym, &env)?;
+                }
+
+                for s in content.iter() {
+                    let t = s.get_type(&sym, &env)?;
+                    if !tp.compare(&t) {
+                        return Err(ParserError::new(&format!("mismatched dictionary types: expected '{:?}' got '{:?}'", tp, t)))
+                    }
+                    
                     s.visit(&local_sym, &local_env)?
                 }
 
@@ -293,7 +312,7 @@ impl Statement {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
-    Str, Num, Bool, Any, Nil, Array(Option<Rc<Expression>>, Rc<Type>), Undefined,
+    Str, Num, Bool, Any, Nil, Array(Rc<Type>), Undefined,
     Fun(Rc<Vec<Type>>), Many(Rc<Type>),
 }
 
@@ -303,7 +322,14 @@ impl Type {
         if self == &Type::Any || other == &Type::Any {
             true
         } else {
-            self == other
+            match self {
+                &Type::Array(ref a) => match other {
+                    &Type::Array(ref b) if **b != Type::Nil => a.compare(b),
+                    _ => false,
+                },
+
+                _ => self == other,
+            }
         }
     }
 }

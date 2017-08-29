@@ -183,7 +183,7 @@ impl Parser {
                         "=" => {
                             self.traveler.next();
                             let expr = self.expression()?;
-
+                            
                             return Ok(Expression::Definition(Some(t), name, Some(Rc::new(expr))))
                         },
 
@@ -213,8 +213,6 @@ impl Parser {
                             }
                         } else {
                             let call = self.call(id)?;
-
-                            self.traveler.next();
 
                             return Ok(call)
                         }
@@ -341,7 +339,7 @@ impl Parser {
                 },
                 _   => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected symbol: {}", self.traveler.current_content()))),
             },
-            _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {:#?}", self.traveler.current()))),
+            _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {:#?}", self.traveler.current_content()))),
         }
     }
     
@@ -367,43 +365,29 @@ impl Parser {
                 self.traveler.next();
             }
         }
-
+        
+        if self.traveler.current_content() == ")" {
+            self.traveler.next();
+        }
+        
         Ok(Expression::Call(Rc::new(caller), Rc::new(args)))
     }
     
     fn types(&mut self) -> ParserResult<Option<Type>> {
         match self.traveler.current().token_type {
             TokenType::Type   => {
-                let t = Ok(Some(get_type(&self.traveler.current_content()).unwrap()));
+                let t = get_type(&self.traveler.current_content()).unwrap();
                 self.traveler.next();
-                t
-            },
-            TokenType::Symbol => match self.traveler.current_content().as_str() {
-                "[" => {
-                    self.traveler.next(); // a
 
-                    let mut len = None;
-
-                    if self.traveler.current_content() != "]" {
-                        len = Some(Rc::new(self.expression()?));
+                match self.traveler.current_content().as_str() {
+                    ".." => {
                         self.traveler.next();
-                    }
-                    
-                    self.traveler.expect_content("]")?;
-                    self.traveler.next(); // b
+                        
+                        Ok(Some(Type::Array(Rc::new(t))))
+                    },
 
-                    if self.traveler.current().token_type == TokenType::Type {
-                        let t = Type::Array(len, Rc::new(get_type(&self.traveler.current_content()).unwrap()));
-                        self.traveler.next();
-
-                        Ok(Some(t))
-                    } else {
-                        self.traveler.prev(); // b
-                        self.traveler.prev(); // a
-                        Ok(None)
-                    }
-                },
-                _ => Ok(None),
+                    _ => Ok(Some(t))
+                }
             },
             _ => Ok(None),
         }
