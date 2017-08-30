@@ -25,6 +25,12 @@ b = fun: 10
 ```
 
 ```
+a =
+  fun (b num) num:
+    b + 10
+```
+
+```
 b any .. = [
   a = fun (b num) num:
     b + 10
