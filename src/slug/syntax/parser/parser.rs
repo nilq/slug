@@ -104,7 +104,7 @@ impl Parser {
                                     body,
                                 }))
                             },
-                            
+
                             _ => {
                                 let mut t = None;
 
@@ -174,7 +174,6 @@ impl Parser {
             TokenType::StringLiteral => Ok(Expression::StringLiteral(Rc::new(self.traveler.current_content().clone()))),
             TokenType::Identifier    => {
                 let mut id = Expression::Identifier(Rc::new(self.traveler.current_content()));
-                let name = Rc::new(self.traveler.current_content());
 
                 self.traveler.next();
 
@@ -184,17 +183,24 @@ impl Parser {
                             self.traveler.next();
                             let expr = self.expression()?;
                             
-                            return Ok(Expression::Definition(Some(t), name, Some(Rc::new(expr))))
+                            return Ok(Expression::Definition(Some(t), Rc::new(id), Some(Rc::new(expr))))
                         },
 
-                        _ => return Ok(Expression::Definition(Some(t), name, None)),
+                        _ => return Ok(Expression::Definition(Some(t), Rc::new(id), None)),
                     }
-                }
+                } else if self.traveler.current_content() == "." {
+                    self.traveler.next();
 
-                if self.traveler.current_content() == "." {
-                    self.traveler.next();
-                    id = Expression::Index(Rc::new(id), Rc::new(self.traveler.expect(TokenType::Identifier)?));
-                    self.traveler.next();
+                    match self.expression()? {
+                        Expression::Definition(ref t, ref a, ref b) => {
+                            id = Expression::Definition(t.clone(), Rc::new(Expression::Index(Rc::new(id), a.clone())), b.clone());
+                            self.traveler.next();
+                        },
+                        e => {
+                            id = Expression::Index(Rc::new(id), Rc::new(e));
+                            self.traveler.next();
+                        },
+                    }
                 }
 
                 match self.traveler.current().token_type {
@@ -219,7 +225,7 @@ impl Parser {
                             self.traveler.next();
                             let expr = self.expression()?;
 
-                            Ok(Expression::Definition(None, name, Some(Rc::new(expr))))
+                            Ok(Expression::Definition(None, Rc::new(id), Some(Rc::new(expr))))
                         },
                         
                         _   => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
@@ -368,11 +374,17 @@ impl Parser {
                                         return Ok(Expression::Call(Rc::new(expr), Rc::new(vec!())));
                                     },
                                     "(" => (),
+                                    "=" => {
+                                        self.traveler.next();
+                                        let expr_right = self.expression()?;
+
+                                        return Ok(Expression::Definition(None, Rc::new(expr), Some(Rc::new(expr_right))))
+                                    },
                                     _   => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
                                 }
                             }
 
-                            let call = try!(self.call(expr));
+                            let call = self.call(expr)?;
 
                             self.traveler.next();
 

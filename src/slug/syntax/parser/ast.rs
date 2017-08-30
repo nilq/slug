@@ -14,8 +14,8 @@ pub enum Expression {
     BoolLiteral(bool),
     DictLiteral(Rc<Vec<Expression>>),
     Call(Rc<Expression>, Rc<Vec<Expression>>),
-    Index(Rc<Expression>, Rc<String>),
-    Definition(Option<Type>, Rc<String>, Option<Rc<Expression>>),
+    Index(Rc<Expression>, Rc<Expression>),
+    Definition(Option<Type>, Rc<Expression>, Option<Rc<Expression>>),
     EOF,
     Operation {
         left:  Rc<Expression>,
@@ -132,15 +132,13 @@ impl Expression {
                         return Err(ParserError::new(&format!("mismatched array type: expected '{:?}' got '{:?}'", tp, t)))
                     }
 
-                    println!("visiting: {:?}", s);
-
                     s.visit(&local_sym, &local_env)?
                 }
 
                 Ok(())
             },
 
-            Expression::Definition(ref t, ref name, ref e) => {
+            Expression::Definition(ref t, ref id, ref e) => {
                 if let &Some(ref expr) = e {
                     expr.visit(sym, env)?;
 
@@ -148,34 +146,47 @@ impl Expression {
                         Some(ref tt) => {
                             let right_hand = &expr.get_type(sym, env)?;
                             if !tt.compare(right_hand) {
-                                return Err(ParserError::new(&format!("{}: expected '{:?}', got '{:?}'", name, tt, right_hand)))
+                                return Err(ParserError::new(&format!("{}: expected '{:?}', got '{:?}'", id, tt, right_hand)))
                             }
                             tt.clone()
                         },
                         None => expr.get_type(sym, env)?,
                     };
                     
-                    match sym.get_name(&name) {
-                        Some((i, env_index)) => {
-                            match env.get_type(i, env_index) {
-                                Ok(tp2) => if !tp2.compare(&tp) {
-                                    return Err(ParserError::new(&format!("{}: can't mutate type", name)))
+                    match **id {
+                        Expression::Identifier(ref name) => {
+                            match sym.get_name(&name) {
+                                Some((i, env_index)) => {
+                                    match env.get_type(i, env_index) {
+                                        Ok(tp2) => if !tp2.compare(&tp) {
+                                            return Err(ParserError::new(&format!("{}: can't mutate type", name)))
+                                        },
+                                        Err(e) => return Err(ParserError::new(&format!("{}", e))),
+                                    }
                                 },
-                                Err(e) => return Err(ParserError::new(&format!("{}", e))),
+                                None => (),
+                            }
+                        
+                            let index = sym.add_name(name);
+                            if index >= env.size() {
+                                env.grow();
+                            }
+                            
+                            if let Err(e) = env.set_type(index, 0, tp) {
+                                Err(ParserError::new(&format!("error setting type: {}", e)))
+                            } else {
+                                Ok(())
                             }
                         },
-                        None => (),
-                    }
-                
-                    let index = sym.add_name(name);
-                    if index >= env.size() {
-                        env.grow();
-                    }
 
-                    if let Err(e) = env.set_type(index, 0, tp) {
-                        Err(ParserError::new(&format!("error setting type: {}", e)))
-                    } else {
-                        Ok(())
+                        Expression::Index(ref a, ref b) => {
+                            a.visit(&sym, &env)?;
+                            b.visit(&sym, &env)?;
+
+                            Ok(())
+                        },
+                        
+                        _ => Err(ParserError::new(&format!("{}: failed to assign", id))),
                     }
                 } else {
                     Ok(())
