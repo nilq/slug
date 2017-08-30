@@ -287,6 +287,13 @@ impl Expression {
                     writeln!(f, "local {}", name)
                 }
             },
+            
+            Expression::Index(ref a, ref b) => {
+                match **b {
+                    Expression::Identifier(_) => write!(f, "{}.{}", a, b),
+                    _ => write!(f, "{}[{}]", a, b),
+                }
+            },
 
             Expression::DictLiteral(ref body)  => {
                 write!(f, "{{")?;
@@ -296,6 +303,22 @@ impl Expression {
                 }
                 
                 write!(f, "}}")
+            },
+
+            Expression::Call(ref id, ref args) => {
+                write!(f, "{}", id)?;
+                write!(f, "(")?;
+
+                let mut acc = 1;
+                for e in args.iter() {
+                    write!(f, "{}", e)?;
+                    if acc != args.len() {
+                        write!(f, ",")?;
+                    }
+                    acc += 1;
+                }
+
+                write!(f, ")")
             },
 
             Expression::Fun {

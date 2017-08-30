@@ -12,6 +12,8 @@ a = [
     a10 = fun (a num) num:
         a + 10
 ]
+
+b num = a.a10 10
     "#;
 
     let mut blocks = BlockTree::new(test, 0);
