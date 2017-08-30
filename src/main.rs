@@ -4,14 +4,14 @@ use std::rc::Rc;
 
 use slug::syntax;
 use syntax::lexer::{BlockTree, process_branch};
-use syntax::parser::{Traveler, Parser};
+use syntax::parser::{Traveler, Parser, Expression};
 
 fn main() {
     let test = r#"
-b =
-  [ a = fun (b num) num: b + 10 ]
-
-c num = b.a 100
+a = [
+    a10 = fun (a num) num:
+        a + 10
+]
     "#;
 
     let mut blocks = BlockTree::new(test, 0);
@@ -28,18 +28,22 @@ c num = b.a 100
 
     match parser.parse() {
         Err(why)  => println!("error: {}", why),
-        Ok(stuff) => for s in stuff.iter() {
+        Ok(stuff) => {
             println!("{:#?}", stuff);
-
-            match s.visit(&symtab, &typetab) {
-                Ok(()) => (),
-                Err(e) => {
-                    println!("{}", e);
-                    return
-                },
+            
+            for s in stuff.iter() {
+                match s.visit(&symtab, &typetab) {
+                    Ok(()) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        return
+                    },
+                }
             }
+            
+            println!("{}", Expression::Block(Rc::new(stuff)))
         },
     }
-    
+        
     println!("{:?}\n{:?}", symtab, typetab);
 }

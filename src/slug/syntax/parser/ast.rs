@@ -112,7 +112,7 @@ impl Expression {
             
             Expression::Index(ref a, ref b) => { 
                 a.visit(&sym, &env)?;
-                
+
                 Ok(())
             },
 
@@ -253,8 +253,89 @@ impl Expression {
         }
     }
     
+    pub fn global(&self) -> Rc<String> {
+        match *self {
+            Expression::Definition(_, ref name, ref expr) => {
+                if let &Some(ref e) = expr {
+                    Rc::new(format!("{} = {}", name, e))
+                } else {
+                    Rc::new(format!("{}", name))
+                }
+            },
+            
+            _ => Rc::new(format!("{}", self)),
+        }
+    }
+
     pub fn lua(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
+            Expression::Block(ref statements) => {
+                for s in statements.iter() {
+                    s.lua(f)?;
+                }
+
+                Ok(())
+            },
+            Expression::NumberLiteral(ref n) => write!(f, "{}", n),
+            Expression::StringLiteral(ref n) => write!(f, "\"{}\"", n),
+            Expression::BoolLiteral(ref n)   => write!(f, "{}", n),
+            Expression::Identifier(ref n)    => write!(f, "{}", n),
+            Expression::Definition(_, ref name, ref expr) => {
+                if let &Some(ref e) = expr {
+                    writeln!(f, "local {} = {}", name, e)
+                } else {
+                    writeln!(f, "local {}", name)
+                }
+            },
+
+            Expression::DictLiteral(ref body)  => {
+                write!(f, "{{")?;
+                
+                for e in body.iter() {
+                    write!(f, "{},", e.global())?;
+                }
+                
+                write!(f, "}}")
+            },
+
+            Expression::Fun {
+                ref t, ref param_names, ref param_types, ref body,
+            } => {
+                write!(f, "function")?;
+
+                write!(f, "(")?;
+
+                for e in param_names.iter() {
+                    write!(f, "{}", e)?;
+                    if e != param_names.last().unwrap() {
+                        write!(f, ",")?;
+                    }
+                }
+                
+                writeln!(f, ")")?;
+                
+                for s in body.iter() {
+                    if s == body.last().unwrap() {
+                        match *s {
+                            Statement::Expression(ref e) => { write!(f, "return {}\n", e)?; },
+                            _ => { write!(f, "{}", s)?; },
+                        }
+                    } else {
+                        write!(f, "{}", s)?;
+                    }
+                }
+                
+                write!(f, "end")
+            },
+            
+            Expression::Operation {
+                ref left, ref op, ref right,
+            } => {
+                write!(f, "{}", left)?;
+                write!(f, " {} ", op)?;
+                write!(f, "{}", right)
+            },
+
             _ => Ok(()),
         }
     }
@@ -336,6 +417,19 @@ impl Statement {
                 Ok(Type::Fun(Rc::new(tp)))
             },
         }
+    }
+    
+    pub fn lua(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Statement::Expression(ref e) => write!(f, "{}", e),
+            _ => Ok(()),
+        }
+    }
+}
+
+impl fmt::Display for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.lua(f)
     }
 }
 
@@ -458,7 +552,7 @@ impl Operand {
         }
     }
 
-    pub fn translate_lua(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn lua(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Operand::Pow     => write!(f, "^"),
             Operand::Mul     => write!(f, "*"),
@@ -476,6 +570,12 @@ impl Operand {
             Operand::Or      => write!(f, "or"),
             Operand::Not     => write!(f, "not"),
         }
+    }
+}
+
+impl fmt::Display for Operand {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.lua(f)
     }
 }
 

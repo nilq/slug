@@ -544,6 +544,8 @@ impl Parser {
                 }
 
                 let (op, precedence) = get_operand(&self.traveler.current_content()).unwrap();
+                
+                self.traveler.next();
 
                 if precedence >= op_stack.last().unwrap().1 {
                     let left  = ex_stack.pop().unwrap();
@@ -555,15 +557,11 @@ impl Parser {
                         left:  Rc::new(right)
                     });
 
-                    self.traveler.next();
-
                     ex_stack.push(self.term()?);
                     op_stack.push((op, precedence));
 
                     continue
                 }
-
-                self.traveler.next();
 
                 ex_stack.push(self.term()?);
                 op_stack.push((op, precedence));
@@ -578,6 +576,8 @@ impl Parser {
                 left:  Rc::new(right)
             });
         }
+        
+        self.traveler.next();
 
         Ok(ex_stack.pop().unwrap())
     }
