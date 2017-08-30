@@ -418,11 +418,41 @@ impl Statement {
             },
         }
     }
-    
+
     pub fn lua(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Statement::Expression(ref e) => write!(f, "{}", e),
-            _ => Ok(()),
+            Statement::Fun {
+                ref name, ref t, ref param_names, ref param_types, ref body,
+            } => {
+                write!(f, "function")?;
+                
+                write!(f, "{}", name)?;
+
+                write!(f, "(")?;
+
+                for e in param_names.iter() {
+                    write!(f, "{}", e)?;
+                    if e != param_names.last().unwrap() {
+                        write!(f, ",")?;
+                    }
+                }
+                
+                writeln!(f, ")")?;
+                
+                for s in body.iter() {
+                    if s == body.last().unwrap() {
+                        match *s {
+                            Statement::Expression(ref e) => { write!(f, "return {}\n", e)?; },
+                            _ => { write!(f, "{}", s)?; },
+                        }
+                    } else {
+                        write!(f, "{}", s)?;
+                    }
+                }
+                
+                write!(f, "end")
+            },
         }
     }
 }
