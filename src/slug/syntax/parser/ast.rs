@@ -43,7 +43,17 @@ impl Expression {
                 },
                 None => Err(ParserError::new(&format!("unexpected use of: {}", n))),
             },
-            
+
+            Expression::Index(ref a, ref b) => {
+                match a.get_type(&sym, &env)? {
+                    Type::Array(ref t) => {
+                        let ref tt = *t.clone(); // uhm ..
+                        Ok(tt.clone())
+                    },
+                    _ => Err(ParserError::new(&format!("{:?}: trying to index '{:?}'", a, b)))
+                }
+            },
+
             Expression::Definition(ref t, _, ref expr) => {
                 match *t {
                     Some(ref tp) => return Ok(tp.clone()),
@@ -100,6 +110,12 @@ impl Expression {
                 None => Err(ParserError::new(&format!("use of undeclared: {}", id))),
             },
             
+            Expression::Index(ref a, ref b) => { 
+                a.visit(&sym, &env)?;
+                
+                Ok(())
+            },
+
             Expression::DictLiteral(ref content) => {
                 let local_sym = Rc::new(SymTab::new(sym.clone(), &Vec::new()));
                 let local_env = Rc::new(TypeTab::new(env.clone(), &Vec::new()));
@@ -113,9 +129,11 @@ impl Expression {
                 for s in content.iter() {
                     let t = s.get_type(&sym, &env)?;
                     if !tp.compare(&t) {
-                        return Err(ParserError::new(&format!("mismatched dictionary types: expected '{:?}' got '{:?}'", tp, t)))
+                        return Err(ParserError::new(&format!("mismatched array type: expected '{:?}' got '{:?}'", tp, t)))
                     }
-                    
+
+                    println!("visiting: {:?}", s);
+
                     s.visit(&local_sym, &local_env)?
                 }
 
