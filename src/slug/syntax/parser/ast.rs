@@ -181,7 +181,6 @@ impl Expression {
 
                         Expression::Index(ref a, ref b) => {
                             a.visit(&sym, &env)?;
-                            b.visit(&sym, &env)?;
 
                             Ok(())
                         },

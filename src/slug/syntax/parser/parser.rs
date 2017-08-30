@@ -22,6 +22,8 @@ impl Parser {
             if let Some(s) = self.statement()? {
                 stack.push(s);
                 self.traveler.next();
+            } else {
+                stack.push(Statement::Expression(Rc::new(self.expression()?)))
             }
         }
 
@@ -158,12 +160,52 @@ impl Parser {
         match self.traveler.current().token_type {
             TokenType::EOL => {
                 self.traveler.next();
-                match self.traveler.current().token_type {
-                    TokenType::Block(_) => return Ok(Expression::Block(Rc::new(self.block()?))),
-                    TokenType::EOL      => return Ok(Expression::EOF),
+                match self.traveler.current().token_type.clone() {
+                    TokenType::Block(_) => {
+                        let block = self.block()?;
+                        
+                        if block.len() > 1 {
+                            return Err(ParserError::new_pos(self.traveler.current().position, &format!("can't termize several elements")))
+                        } else {
+                            match block.get(0) {
+                                Some(s) => match *s {
+                                    Statement::Expression(ref e) => {
+                                        let ref ex = *e.clone();
+                                        return Ok(ex.clone())
+                                    },
+                                    _ => (),
+                                },
+                                None => return Err(ParserError::new_pos(self.traveler.current().position, &format!("")))
+                            }
+                            return Ok(Expression::Block(Rc::new(self.block()?)))
+                        }
+                    },
+
+                    TokenType::EOL => return Ok(Expression::EOF),
                     _ => (),
                 }
             },
+
+            TokenType::Block(_) => {
+                let block = self.block()?;
+                
+                if block.len() > 1 {
+                    return Err(ParserError::new_pos(self.traveler.current().position, &format!("can't termize several elements")))
+                } else {
+                    match block.get(0) {
+                        Some(s) => match *s {
+                            Statement::Expression(ref e) => {
+                                let ref ex = *e.clone();
+                                return Ok(ex.clone())
+                            },
+                            _ => (),
+                        },
+                        None => return Err(ParserError::new_pos(self.traveler.current().position, &format!("")))
+                    }
+                    return Ok(Expression::Block(Rc::new(self.block()?)))
+                }
+            },
+
             _ => (),
         }
 
@@ -405,7 +447,7 @@ impl Parser {
         }
     }
     
-    fn block(&mut self) -> ParserResult<Vec<Statement>> {
+    fn block(&mut self) -> ParserResult<Vec<Statement>> {        
         match self.traveler.current().token_type.clone() {
             TokenType::Block(ref v) => {
                 let mut p = Parser::new(Traveler::new(v.clone()));
