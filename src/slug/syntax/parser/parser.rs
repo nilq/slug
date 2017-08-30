@@ -238,6 +238,10 @@ impl Parser {
                             id = Expression::Definition(t.clone(), Rc::new(Expression::Index(Rc::new(id), a.clone())), b.clone());
                             self.traveler.next();
                         },
+                        Expression::Call(ref a, ref args) => {
+                            id = Expression::Call(Rc::new(Expression::Index(Rc::new(id), a.clone())), args.clone());
+                            self.traveler.next();
+                        },
                         e => {
                             id = Expression::Index(Rc::new(id), Rc::new(e));
                             self.traveler.next();
