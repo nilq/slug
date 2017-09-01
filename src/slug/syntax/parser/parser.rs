@@ -33,6 +33,10 @@ impl Parser {
     pub fn skip_whitespace(&mut self) -> ParserResult<()> {
         while self.traveler.current_content() == "\n" || self.traveler.current().token_type == TokenType::EOL {
             self.traveler.next();
+            
+            if self.traveler.remaining() < 2 {
+                break
+            }
         }
         
         Ok(())
@@ -94,7 +98,7 @@ impl Parser {
                                     self.traveler.next();
 
                                     body = Rc::new(self.block()?);
-                                } else {
+                                } else {                                    
                                     body = Rc::new(vec![Statement::Expression(Rc::new(self.expression()?))])
                                 }
 
@@ -141,6 +145,7 @@ impl Parser {
                     } else {
                         if self.traveler.current().token_type == TokenType::Type {
                             self.traveler.prev();
+                            
                             Ok(Some(Statement::Expression(Rc::new(self.expression()?))))
                         } else {
                             self.traveler.prev();
@@ -158,33 +163,7 @@ impl Parser {
     pub fn term(&mut self) -> ParserResult<Expression> {
         self.skip_whitespace()?;
         match self.traveler.current().token_type {
-            TokenType::EOL => {
-                self.traveler.next();
-                match self.traveler.current().token_type.clone() {
-                    TokenType::Block(_) => {
-                        let block = self.block()?;
-                        
-                        if block.len() > 1 {
-                            return Err(ParserError::new_pos(self.traveler.current().position, &format!("can't termize several elements")))
-                        } else {
-                            match block.get(0) {
-                                Some(s) => match *s {
-                                    Statement::Expression(ref e) => {
-                                        let ref ex = *e.clone();
-                                        return Ok(ex.clone())
-                                    },
-                                    _ => (),
-                                },
-                                None => return Err(ParserError::new_pos(self.traveler.current().position, &format!("")))
-                            }
-                            return Ok(Expression::Block(Rc::new(self.block()?)))
-                        }
-                    },
-
-                    TokenType::EOL => return Ok(Expression::EOF),
-                    _ => (),
-                }
-            },
+            TokenType::EOL => return Ok(Expression::EOF),
 
             TokenType::Block(_) => {
                 let block = self.block()?;
@@ -267,13 +246,13 @@ impl Parser {
                             Ok(id)
                         },
                         "!"       => Ok(Expression::Call(Rc::new(id), Rc::new(vec!()))),
-                        "="       => {
+                        "="       => {                            
                             self.traveler.next();
                             let expr = self.expression()?;
 
                             Ok(Expression::Definition(None, Rc::new(id), Some(Rc::new(expr))))
                         },
-                        
+
                         _   => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
                     },
                     _ => {
@@ -329,6 +308,7 @@ impl Parser {
                                 
                                 body = Rc::new(self.block()?);
                             } else {
+                                
                                 body = Rc::new(vec![Statement::Expression(Rc::new(self.expression()?))])
                             }
 
@@ -370,7 +350,7 @@ impl Parser {
                         },
                     }
                 },
-                
+
                 _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected symbol: {}", self.traveler.current_content()))),
             },
             TokenType::Symbol => match self.traveler.current_content().as_str() {
@@ -380,18 +360,41 @@ impl Parser {
                     let mut body = Vec::new();
 
                     while self.traveler.current_content() != "]" {
-                        body.push(self.expression()?);
+                        self.skip_whitespace()?;
 
+                        let expr = self.expression()?;
+
+                        if expr == Expression::EOF {
+                            println!("eow");
+                            while self.traveler.current_content() != "]" {
+                                println!("hey: {}", self.traveler.current_content());
+                                self.traveler.prev();
+                            }
+                            break
+                        }
+
+                        body.push(expr);
+
+                        self.skip_whitespace()?;
+                        
                         self.traveler.next();
+                        println!("next here: {}", self.traveler.current_content());
 
                         if self.traveler.current_content() == "," {
                             self.traveler.next();
                         }
-
+                        
                         self.skip_whitespace()?;
+                        println!("next white: {}", self.traveler.current_content())
                     }
-                                        
+                    
+                    println!("body: {:#?}", body);
+
+                    println!("nextest: {}", self.traveler.current_content());
+
                     self.traveler.next();
+
+                    println!("nextest2: {:?}", self.traveler.current().token_type);
                     
                     Ok(Expression::DictLiteral(Rc::new(body)))
                 },
@@ -445,7 +448,7 @@ impl Parser {
                     Ok(expr)
                 },
 
-                _   => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected symbol: {}", self.traveler.current_content()))),
+                _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected symbol: {}", self.traveler.current_content()))),
             },
             _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {:#?}", self.traveler.current_content()))),
         }
@@ -507,7 +510,11 @@ impl Parser {
         }
         
         let expr = self.term()?;
-        
+
+        if expr == Expression::EOF {
+            return Ok(expr)
+        }
+
         self.traveler.next();
         
         if self.traveler.remaining() > 0 {

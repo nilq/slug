@@ -37,6 +37,14 @@ b any .. = [
 ]
 ```
 
+### currently doesn't works
+
+arrays of arrays .. somewhy the parser fails to find any parent array's closing delimeter.
+
+- chained assignments
+
+- nested arrays
+
 ### also works ...
 
 skipping fun call type checking by explicitly declaring the fun as `any` ..

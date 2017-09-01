@@ -1,4 +1,4 @@
-use std::rc::Rc;
+ use std::rc::Rc;
 
 use super::{ParserResult, ParserError};
 use super::super::{SymTab, TypeTab};
@@ -267,6 +267,7 @@ impl Expression {
         }
     }
 
+
     pub fn lua(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Expression::Block(ref statements) => {
@@ -281,6 +282,14 @@ impl Expression {
             Expression::BoolLiteral(ref n)   => write!(f, "{}", n),
             Expression::Identifier(ref n)    => write!(f, "{}", n),
             Expression::Definition(_, ref name, ref expr) => {
+                match **name {
+                    Expression::Index(_, _) => {
+                        if let &Some(ref e) = expr {
+                            writeln!(f, "{} = {}", name, e)?;
+                        }
+                    },
+                    _ => (),
+                }
                 if let &Some(ref e) = expr {
                     writeln!(f, "local {} = {}", name, e)
                 } else {
